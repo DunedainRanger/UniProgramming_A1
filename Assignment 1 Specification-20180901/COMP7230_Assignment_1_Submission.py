@@ -70,7 +70,7 @@ The map was obtained from: https://www.google.com.au/maps
 import csv
 import numpy as np
 import matplotlib.pyplot as plt
-
+import datetime as dt
 # Some constants you can make use of.
 
 # The latitude and longitude extent of the provided map.
@@ -121,8 +121,26 @@ def parse_record(record):
     # Creating a list of keys so that we can zip these with the values and then create a dict
     # Doing this instead of adding each key individually will make it easier to make changes should the keys change
     # and reduce the amount of code.
-
-
+    record_dictionary = {}
+    # Let's remove the values in record that wont go into our dictionary
+    record.pop(3)
+    record.pop()
+    # By parsing the datetime into a Datetime.datetime object we can easily access the year,month,day and hour without
+    # resorting to regex.
+    record_datetime = dt.datetime.strptime(record.pop(2), '%Y-%m-%d %H:%M')
+    # Now we add the values we want from the datetime to record to set up the next part.
+    record.extend([record_datetime.year, record_datetime.month, record_datetime.day, record_datetime.hour])
+    # Here we zip the value, key and the type we want the value to be in together. This logically groups them together
+    # and results in neater code then enumerating the values and using the index to access the appropriate key and type
+    # from the keys and types lists respectively.
+    keys = ['name', 'id', 'lat', 'long', 'central pressure', 'radius', 'speed', 'year', 'month', 'day', 'hour']
+    types = [str, str, float, float, float, float, float, int, int, int, int]
+    values_keys_types = zip(record,keys,types)
+    # Here we add our values to the dictionary. We add the _ to the variable name type_ to avoid clashing with the
+    # key word type whilst maintaining the obvious/descriptive name for the variable.
+    for value, key, type_ in values_keys_types:
+        if str(value):
+            record_dictionary[key] = type_(value)
     return record_dictionary
 
 
@@ -165,12 +183,10 @@ def pressure_distribution(records):
 
     for record in records:
         # Save pressure to variable for readability
-        pressure = record['Central Pressure']
+        pressure = record['central pressure']
         # If the pressure is already a key in the dictionary then set its value to its current value + 1
         # otherwise set its value to 1.
-        print(type(pressure))
         distribution_dictionary[pressure] = distribution_dictionary.get(pressure, 0) + 1
-    print(distribution_dictionary)
     return distribution_dictionary
 
 
@@ -227,8 +243,16 @@ def animation_data(cyclone_records):
     """
     cyclone_track = list()
 
-    # TODO: Your code here
+    # First convert the dictionaries into tuples of the correct format and add to cyclone_track
+    for cyclone_record in cyclone_records:
+        record_tuple = (cyclone_record['year'], cyclone_record['month'], cyclone_record['day'], cyclone_record['hour'],
+                        cyclone_record['lat'], cyclone_record['long'], cyclone_record['speed'], cyclone_record['name'])
+        cyclone_track.append(record_tuple)
 
+    # Now we order them chronologically, we can do this in line line by making use of list.sort's key parameter
+    # This allows us to specify a key to use for sorting. In this case we will convert our year,month,day,hour values
+    # to a datetime and then compare these.
+    cyclone_track.sort(key=lambda x: dt.datetime(x[0], x[1], x[2], x[3]))
     return cyclone_track
 
 
