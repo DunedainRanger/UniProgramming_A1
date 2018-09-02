@@ -1,0 +1,5 @@
+{
+  "COMP7230_Assignment_1_Submission_Tests.py::TestSubmission::test_animation_data": true,
+  "COMP7230_Assignment_1_Submission_Tests.py::TestSubmission::test_parse_record": true,
+  "COMP7230_Assignment_1_Submission_Tests.py::TestSubmission::test_pressure_distribution": true
+}
