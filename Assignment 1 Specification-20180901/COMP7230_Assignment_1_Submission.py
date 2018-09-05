@@ -311,84 +311,59 @@ def generate_heat_map(records):
     record, as produced by Question 2.
     :return: a 2d numpy array of integers.
     """
-
-    #ROughly 111KM between latitudes
-    #Radius of earth at lat = adjacent of angle with hypotenuse = radius
-    # Radius of Earth at Lat =cos(Lat) * Hypotenuse
-
-
-
-    array_size = 50  # y, x dimensions of the heat-map
+    array_size = 50
     heat_map_data = np.zeros(shape=(array_size, array_size))
-    height_of_box_in_lat = (MAP_TOP-MAP_BOTTOM)/array_size
-    width_of_box_in_lon = (MAP_RIGHT -MAP_LEFT)/ array_size
-    # Add eye locations to heat map data
-    # for cyclone in records:
-    #     x,y = convert_lat_long(cyclone['lat'], cyclone['long'])
-    #     if 0<x<1 and 0<y<1:
-    #         column, row = int(x*array_size), -int(y*array_size)
-    #         heat_map_data[row, column] += 1
-    # Take into account the radius
-    # for cyclone in records:
-    #     centre_x, centre_y = convert_lat_long(cyclone['lat'], cyclone['long'])
-    #     if 0 < centre_x < 1 and 0 < centre_y < 1:
-    #         cyclone_map_data = np.zeros(shape=(array_size, array_size))
-    #         centre_column, centre_row = int(centre_x * array_size), -int(centre_y * array_size)
-    #         if 'radius' in cyclone:
-    #             radius_at_lat = math.cos(math.radians(cyclone['lat'])) * EARTH_RADIUS
-    #             degree_lon_in_km = radius_at_lat/360
-    #             top = min(cyclone['lat'] + cyclone['radius']/111.0, MAP_TOP)
-    #             left = max(cyclone['long'] - cyclone['radius']/degree_lon_in_km, MAP_LEFT)
-    #             left_x,top_y = convert_lat_long(top,left)
-    #             left_column, top_row = int(left_x * array_size), -int(top_y * array_size)
-    #             bottom = max(cyclone['lat'] - cyclone['radius']/110.0, MAP_BOTTOM)
-    #             right = min(cyclone['long'] + cyclone['radius']/degree_lon_in_km, MAP_RIGHT)
-    #             right_x, bottom_y = convert_lat_long(bottom, right)
-    #             right_column, bottom_row = int(right_x * array_size), -int(bottom_y * array_size)
-    #             for column in range(left_column, right_column):
-    #                 cyclone_map_data[centre_row, column] = 1
-    #             for row in range(bottom_row, top_row):
-    #                 cyclone_map_data[row, centre_column] = 1
-    #             for
-    #         else:
-    #             cyclone_map_data[centre_row, centre_column] = 1
-    #         heat_map_data += cyclone_map_data
-
-
+    height_of_box_in_lat = (MAP_TOP - MAP_BOTTOM)/array_size
+    width_of_box_in_lon = (MAP_RIGHT - MAP_LEFT)/array_size
     for cyclone in records:
         cyclone_map_data = np.zeros(shape=(array_size, array_size))
         centre_x, centre_y = convert_lat_long(cyclone['lat'], cyclone['long'])
         centre_column, centre_row = int(centre_x * array_size), -int(centre_y * array_size)
         if 'radius' in cyclone:
+            # Calculate the length in KM of one degree longitude at the eyes latitude
+            # To do this we first calculate the radius of the earth at this degree latitude, we do this by using
+            # trigonometry and assuming the earth is a perfect sphere. Then we divide the radius by 360 to get
+            # the length in KMs of a single degree longitude at this latitude.
+            # Cosine(latitude angle) * Earths Radius (hypotenuse) = Radius at this degree latitude (adjacent)
+            radius_at_lat = math.cos(math.radians(cyclone['lat'])) * EARTH_RADIUS
+            degree_lon_in_km = radius_at_lat / 360
             for row in range(array_size):
+                # Get the latitudinal position of the side of the row (top or bottom of row) closest to the eye.
+                # If eye is in row then lat position closest to eye is eyes latitude
+                box_top_lat = MAP_TOP - row * height_of_box_in_lat
+                box_bottom_lat = MAP_TOP - (row + 1) * height_of_box_in_lat
+                closest_latitudes = [cyclone['lat'], box_bottom_lat, box_top_lat]
+                row_position = np.sign(centre_row - row)  # Box is above if +ve, inline if 0, below if -ve
+                y_distance = 110 * (closest_latitudes[row_position] - cyclone['lat'])  # 1 lat = approx 110KM
                 for column in range(array_size):
-                    column_position =  column - centre_column # Box is left of the epicentre if -ve, inline if 0, right if +ve
-                    row_position = centre_row - row # Box is above if +ve, inline if 0, below if -ve
-                    box_top_lat = MAP_TOP - row*height_of_box_in_lat
-                    box_bottom_lat = MAP_TOP - (row+1)*height_of_box_in_lat
-                    box_left_lon = Map_LEFT + column*width_of_box_in_lon
-                    box_right = MAP_LEFT + (column+1)*width_of_box_in_lon
-
-
-
-
-
-
-            # if 0 < centre_y < 1:
-            #     for row in range(array_size):
-            #         if centre_row < row: #If row is below centre row
-            #             row_top_lat = MAP_TOP - row*height_of_box_in_lat
-            #             cyclone_map_data[row, centre_column] = int(110*(cyclone['lat']-row_top_lat) <= cyclone['radius'])
-            #         elif centre_row == row:
-            #             cyclone_map_data[row, centre_column] = 1
-            #         elif centre_row > row:
-            #             row_bottom_lat = MAP_TOP - (row+1)*height_of_box_in_lat
-            #             cyclone_map_data[row, centre_column] = int(110 * (cyclone['lat'] - row_bottom_lat) <= cyclone['radius'])
-        elif not 'radius' in cyclone and (0< centre_y < 1 and 0 < centre_x < 1):
+                    # Get the longitudinal position of the side of the column (left or right side of column) that is
+                    # closest to the eye.
+                    # If eye is in column then long position closest to eye is eyes longitude.
+                    box_left_lon = MAP_LEFT + column*width_of_box_in_lon
+                    box_right_lon = MAP_LEFT + (column+1)*width_of_box_in_lon
+                    closest_longitudes = [cyclone['long'], box_left_lon, box_right_lon]
+                    column_position = np.sign(column - centre_column)
+                    x_distance = degree_lon_in_km*(closest_longitudes[column_position] - cyclone['long'])
+                    # Now to get the actual distance we take sqrt(x**2 + y**2)
+                    distance_from_eye = math.sqrt(x_distance**2 + y_distance**2)
+                    if distance_from_eye < cyclone['radius']:  # Aka if part of cyclone in box
+                        cyclone_map_data[row][column] = 1
+        elif 'radius' not in cyclone and (0 < centre_y < 1 and 0 < centre_x < 1):
+            # If cyclone has no radius and eye is on map then record this.
             cyclone_map_data[centre_row, centre_column] = 1
+        # At this point cyclone_map_data has a value of 1 for each box the cyclone is in and 0 for boxes it is not in.
+        # By taking the sum of these for every cyclone we will get out hea_map_data.
         heat_map_data += cyclone_map_data
     return heat_map_data
-
+    """
+    The heat map produced by the code above is a rough approximation of the example heat map, however it over-estimates 
+    how wide cyclones are. You can see this because the two main patched of activity seems stretched out, covering the
+    top of australia and some of the pacific countries unlike in the example. This is because the method above uses a 
+    heuristic method to convert the lat and long into distance. It assumes 1 lat is precisely 110KM and uses an 
+    approximate conversion from longitude to KM based on the latitude of the eye of the storm.
+    To make this more accurate I would download the GEOPY package and use its geopy.distance.distance method which uses
+    the geodesic method to calculate distance. For details on my heuristic method please see the source code above.
+    """
 
 ########################################################################################################################
 #                                   Do not modify the code below this point.
