@@ -71,6 +71,7 @@ import csv
 import numpy as np
 import matplotlib.pyplot as plt
 import datetime as dt
+import math
 # Some constants you can make use of.
 
 # The latitude and longitude extent of the provided map.
@@ -227,6 +228,9 @@ def pressure_histogram(distribution_dictionary):
 
     # Display the histogram
     plt.bar(x_list, y_list, width=1)
+    plt.title("Histogram to show frequency of central pressure values")
+    plt.xlabel("Central Pressure")
+    plt.ylabel("Frequency")
     plt.show()
 
     return None
@@ -308,10 +312,81 @@ def generate_heat_map(records):
     :return: a 2d numpy array of integers.
     """
 
+    #ROughly 111KM between latitudes
+    #Radius of earth at lat = adjacent of angle with hypotenuse = radius
+    # Radius of Earth at Lat =cos(Lat) * Hypotenuse
+
+
+
     array_size = 50  # y, x dimensions of the heat-map
     heat_map_data = np.zeros(shape=(array_size, array_size))
-    # TODO: Your code here
+    height_of_box_in_lat = (MAP_TOP-MAP_BOTTOM)/array_size
+    width_of_box_in_lon = (MAP_RIGHT -MAP_LEFT)/ array_size
+    # Add eye locations to heat map data
+    # for cyclone in records:
+    #     x,y = convert_lat_long(cyclone['lat'], cyclone['long'])
+    #     if 0<x<1 and 0<y<1:
+    #         column, row = int(x*array_size), -int(y*array_size)
+    #         heat_map_data[row, column] += 1
+    # Take into account the radius
+    # for cyclone in records:
+    #     centre_x, centre_y = convert_lat_long(cyclone['lat'], cyclone['long'])
+    #     if 0 < centre_x < 1 and 0 < centre_y < 1:
+    #         cyclone_map_data = np.zeros(shape=(array_size, array_size))
+    #         centre_column, centre_row = int(centre_x * array_size), -int(centre_y * array_size)
+    #         if 'radius' in cyclone:
+    #             radius_at_lat = math.cos(math.radians(cyclone['lat'])) * EARTH_RADIUS
+    #             degree_lon_in_km = radius_at_lat/360
+    #             top = min(cyclone['lat'] + cyclone['radius']/111.0, MAP_TOP)
+    #             left = max(cyclone['long'] - cyclone['radius']/degree_lon_in_km, MAP_LEFT)
+    #             left_x,top_y = convert_lat_long(top,left)
+    #             left_column, top_row = int(left_x * array_size), -int(top_y * array_size)
+    #             bottom = max(cyclone['lat'] - cyclone['radius']/110.0, MAP_BOTTOM)
+    #             right = min(cyclone['long'] + cyclone['radius']/degree_lon_in_km, MAP_RIGHT)
+    #             right_x, bottom_y = convert_lat_long(bottom, right)
+    #             right_column, bottom_row = int(right_x * array_size), -int(bottom_y * array_size)
+    #             for column in range(left_column, right_column):
+    #                 cyclone_map_data[centre_row, column] = 1
+    #             for row in range(bottom_row, top_row):
+    #                 cyclone_map_data[row, centre_column] = 1
+    #             for
+    #         else:
+    #             cyclone_map_data[centre_row, centre_column] = 1
+    #         heat_map_data += cyclone_map_data
 
+
+    for cyclone in records:
+        cyclone_map_data = np.zeros(shape=(array_size, array_size))
+        centre_x, centre_y = convert_lat_long(cyclone['lat'], cyclone['long'])
+        centre_column, centre_row = int(centre_x * array_size), -int(centre_y * array_size)
+        if 'radius' in cyclone:
+            for row in range(array_size):
+                for column in range(array_size):
+                    column_position =  column - centre_column # Box is left of the epicentre if -ve, inline if 0, right if +ve
+                    row_position = centre_row - row # Box is above if +ve, inline if 0, below if -ve
+                    box_top_lat = MAP_TOP - row*height_of_box_in_lat
+                    box_bottom_lat = MAP_TOP - (row+1)*height_of_box_in_lat
+                    box_left_lon = Map_LEFT + column*width_of_box_in_lon
+                    box_right = MAP_LEFT + (column+1)*width_of_box_in_lon
+
+
+
+
+
+
+            # if 0 < centre_y < 1:
+            #     for row in range(array_size):
+            #         if centre_row < row: #If row is below centre row
+            #             row_top_lat = MAP_TOP - row*height_of_box_in_lat
+            #             cyclone_map_data[row, centre_column] = int(110*(cyclone['lat']-row_top_lat) <= cyclone['radius'])
+            #         elif centre_row == row:
+            #             cyclone_map_data[row, centre_column] = 1
+            #         elif centre_row > row:
+            #             row_bottom_lat = MAP_TOP - (row+1)*height_of_box_in_lat
+            #             cyclone_map_data[row, centre_column] = int(110 * (cyclone['lat'] - row_bottom_lat) <= cyclone['radius'])
+        elif not 'radius' in cyclone and (0< centre_y < 1 and 0 < centre_x < 1):
+            cyclone_map_data[centre_row, centre_column] = 1
+        heat_map_data += cyclone_map_data
     return heat_map_data
 
 
