@@ -137,7 +137,7 @@ def parse_record(record):
     keys = ['name', 'id', 'lat', 'long', 'central pressure', 'radius', 'speed', 'year', 'month', 'day', 'hour']
     types = [str, str, float, float, float, float, float, int, int, int, int]
     values_keys_types = zip(record,keys,types)
-    # Here we add our values to the dictionary. We add the _ to the variable name type_ to avoid clashing with the
+    # Here we add our values to the dictionary. We add the "_" to the variable name "type_" to avoid clashing with the
     # key word type whilst maintaining the obvious/descriptive name for the variable.
     for value, key, type_ in values_keys_types:
         if str(value):
@@ -226,11 +226,15 @@ def pressure_histogram(distribution_dictionary):
     x_list = [frequency_data[i][0] for i in range(len(frequency_data))]
     y_list = [frequency_data[i][1] for i in range(len(frequency_data))]
 
-    # Display the histogram
-    plt.bar(x_list, y_list, width=1)
+    # Set width = 0.5 to allow for space between bars, edgecolor='black' for more distinguished edges and log=True to
+    # allow for small and large values to appear better on the same graph (previously small values were impossible
+    # to see
+    plt.bar(x_list, y_list, width=0.5, edgecolor='black', log=True)
+    # Add title and axis labels to histogram for readability
     plt.title("Histogram to show frequency of central pressure values")
     plt.xlabel("Central Pressure")
     plt.ylabel("Frequency")
+    # Display the histogram
     plt.show()
 
     return None
